@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+        <style>
+			html, body {
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				background-color: #eee;
+			}
+
+			#add-sticky-btn, #add-impact-btn, #add-uncertainty-btn {
+				float: left;
+				font-weight: bold;
+				font-size: 2em;
+				border: none;
+				background: none;
+				cursor: pointer;
+				color: white;
+				text-shadow: 1px 1px 1px black, -1px -1px 1px black;
+			}
+
+			#add-impact-btn, #add-uncertainty-btn {
+				float:right;
+			}
+			
+        	.sticky {
+			    background-color: #F4F39E;
+			    border-color: #DEE184;
+			    padding: 1.2em 1em;
+			    -webkit-box-shadow: 0px 3px 7px rgba(0,0,0,0.25);
+			    -moz-box-shadow: 0px 3px 7px rgba(0,0,0,0.25);
+			    box-shadow: 0px 3px 7px rgba(0,0,0,0.25);
+			    font-family: Chalkboard, 'Comic Sans';
+        		border-radius: 2px;
+        		max-width: 200px;
+        		cursor: move;
+        		position: absolute;
+				left: 40px;
+				top: 25px;
+        	}
+
+            .sticky textarea {
+                background-color: #F4F39E;
+                border: none;
+                outline: none;
+                font-family: Chalkboard, 'Comic Sans';
+                font-size: 1em;
+                resize: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            #trash {
+            	position: absolute;
+            	bottom: 100%;
+				font-weight: bold;
+				font-size: 2em;
+				cursor: pointer;
+				color: white;
+				text-shadow: 1px 1px 1px black, -1px -1px 1px black;
+            }
+
+            /*.delete-sticky-btn {
+            	position: relative;
+				top: -30px;
+				text-align: right;
+				left: -25px;
+				background-color: #F4F39E;
+				display: inline;
+				padding: 1px 5px;
+				border-radius: 9px;
+				font-weight: bold;
+				cursor: pointer;
+            }*/
+
+            #impact-line {
+            	display:none;
+            	position: absolute;
+            	top: 93%;
+            	height: 4px;
+            	width: 100%;
+            	background-color: green;
+            	position absolute;
+            	opacity: 0.9;
+            }
+
+            #uncertainty-line {
+            	display:none;
+            	position: absolute;
+            	height: 100%;
+            	width: 4px;
+            	background-color: red;
+            	position absolute;
+            	left: 5%;
+            	opacity: 0.9;
+            }
+        </style>
+
+        <!-- <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.6.2.min.js"></script> -->
+    </head>
+    <body>
+        <!--[if lt IE 9]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <button type="button" id="add-sticky-btn">&#43;</button>
+        <div id="impact-line"></div>
+        <div id="uncertainty-line"></div>
+        <button type="button" id="add-uncertainty-btn">&#43;U</button>
+        <button type="button" id="add-impact-btn">&#43;I</button>
+        <div id="trash">T</div>
+
+        <div class="sticky">test sticky!</div>
+        <div class="sticky" style="left: 170px; top: 40px;">test sticky 2!</div>
+
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="scripts/jquery.pep.js"></script>
+        <script src="scripts/jquery.mobile-events.min.js"></script>
+        
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+        <script>
+        	//Build it better! Backbone might be a good choice
+        	//Need to consider how ui will behave with touch
+        	//	need drag and drop AND edit
+        	//	just click/tap to drag & double click to edit???
+        	//style stickies nicer
+        	//give each sticky a unique id and stuff that into the dataTransfer object...
+        	//maintain state...
+        	//sync state with websockets... but we'd need some way of sandboxing sessions...
+        	//allow deleting stickies
+        	//make it work on mobile devices and ie
+        	//might need to implement drag and drop something like this:http://www.quirksmode.org/js/dragdrop.html
+
+        	//see http://ajaxian.com/archives/view-source-tutorial-sticky-notes-with-html5-and-css3
+
+        	var pepOpts = {
+         		constrainTo: 'parent'/*,
+         		startThreshold: [ 2,2 ],
+         		rest: function (el) { this.el.blur(); } I'd like to blur it after we drop it but this isn't working*/
+         	};
+
+			function addSticky (e) {
+				var newOne = $('<div class="sticky">New sticky... double click to edit</div>');
+				newOne.appendTo($('body')).css({ top: e.originalEvent.clientY, left: e.originalEvent.clientX });
+				$(newOne).pep(pepOpts);
+			}
+
+            function startEditingSticky (e) {
+            	$.pep.toggleAll(false);
+
+                var $this = $(this);
+                var content = $(this).text();
+                $this.data('prevcontent', content);
+                var ta = $('<textarea></textarea>');
+                ta.val(content);
+                $this.empty()
+                	/*.append('<div class="delete-sticky-btn">X</div>')*/
+                	.append(ta);
+                ta.focus();
+                ta.get(0).setSelectionRange(content.length, content.length);
+
+                e.preventDefault();
+            }
+ 
+            function onStickyKeyDown (e) {
+				if (e.which === 27) {					
+					//cancel
+                    var el = $(this).closest('.sticky');
+                    var oldContent = el.data('prevcontent');
+
+                    //emptying the el seems to trigger the blur event on the textarea which saves its contents...
+                    $('body').off('blur', '.sticky textarea');
+
+                    el.empty();
+                    el.text(oldContent);
+
+                    $('body').on('blur', '.sticky textarea', onStickyBlur);
+
+                    $.pep.toggleAll(true);
+				}
+				
+				if (e.which === 13){
+					//commit changes
+					finishEditingSticky(this);
+
+					e.preventDefault();
+				}
+			}
+
+			function onStickyBlur (e) {
+				finishEditingSticky(this);
+			}
+
+			function finishEditingSticky (el) {
+				//commit changes
+				var newText = $(el).val();
+				var sticky = $(el).closest('.sticky');
+
+				//emptying the el seems to trigger the blur event on the textarea which saves its contents...
+				$('body').off('blur', '.sticky textarea');
+
+				sticky.empty();
+				sticky.text(newText);
+
+				$('body').on('blur', '.sticky textarea', onStickyBlur);
+
+				$.pep.toggleAll(true);
+			}
+
+			function deleteSticky () {
+				$('body').off('blur', '.sticky textarea');
+
+				sticky.remove();
+
+				$('body').on('blur', '.sticky textarea', onStickyBlur);
+
+				$.pep.toggleAll(true);
+			}
+
+			function addImpactLine () {
+				$('#impact-line').fadeIn('slow');
+			}
+
+			function addUncertaintyLine () {
+				$('#uncertainty-line').fadeIn('slow');
+			}
+
+            $(function(){
+                $('body').on('dblclick doubletap', '.sticky', startEditingSticky);
+				$('body').on('keydown', '.sticky textarea', onStickyKeyDown); /*must be keydown - kepress doesn't capture escape and keyup is too late to cancel the enter key... I think*/
+				$('body').on('blur', '.sticky textarea', onStickyBlur);
+             	$('body').on('click', '#add-sticky-btn', addSticky);
+             	//$('body').on('click', '.delete-sticky-btn', deleteSticky)
+             	$('body').on('click', '#add-impact-btn', addImpactLine);
+             	$('body').on('click', '#add-uncertainty-btn', addUncertaintyLine);
+
+             	$('.sticky').pep(pepOpts);
+            });
+        </script>
+    </body>
+</html>
